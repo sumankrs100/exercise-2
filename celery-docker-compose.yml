@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Message broker (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # RabbitMQ
+      - "15672:15672"  # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # Celery worker
+  worker:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    volumes:
+      - ./app:/app
+    depends_on:
+      - rabbitmq
+    environment:
+      - CELERY_BROKER_URL=amqp://user:password@rabbitmq:5672/
+
+  # Flower - Celery monitoring UI
+  flower:
+    build: .
+    command: celery -A tasks flower --port=5555
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./app:/app
+    depends_on:
+      - rabbitmq
+      - worker
+    environment:
+      - CELERY_BROKER_URL=amqp://user:password@rabbitmq:5672/
+
+volumes:
+  rabbitmq_data:
