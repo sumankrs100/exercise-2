@@ -1,0 +1,5 @@
+docker-compose down
+docker-compose build
+docker-compose up -d
+
+docker-compose exec worker python -c "from app.tasks import add; add.delay(4, 4)"
