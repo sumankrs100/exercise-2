@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  loop-app:
+    build: .
+    container_name: loop-app
+    restart: unless-stopped
+    volumes:
+      - prefect-data:/app/prefect
+      # Uncomment if you need to mount additional data
+      # - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1  # This ensures Python output is sent straight to the container log
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://prefect-server:4200/api}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PROCESS_INTERVAL_SECONDS=${PROCESS_INTERVAL_SECONDS:-60}
+    networks:
+      - prefect-network
+    # Add healthcheck
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0 if os.path.exists('/app/prefect') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Define networks to connect to Prefect if needed
+networks:
+  prefect-network:
+    # Use external network if Prefect is running in another compose stack
+    # external: true
+    # name: prefect_network
+
+# Define volumes
+volumes:
+  prefect-data:
+    # This volume will persist Prefect data
